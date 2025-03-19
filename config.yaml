@@ -1,0 +1,18 @@
+# AWS Inventory Configuration
+
+resources:
+  ec2: true        # List EC2 instances
+  s3: true         # List S3 buckets
+  rds: true        # List RDS databases
+  lambda: true     # List Lambda functions
+  eks: true        # List EKS clusters
+  iam: true        # List IAM users
+  dynamodb: true   # List DynamoDB tables
+
+filters:
+  tags:            # Only list resources with these tags (optional)
+    environment: "prod"
+    owner: "team-a"
+
+output_format: "json"  # Options: json, csv
+
