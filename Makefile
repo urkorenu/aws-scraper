@@ -1,69 +1,135 @@
-.PHONY: all build clean dist debian homebrew test
+# Makefile for AWS Infrastructure Inventory Tool
 
 # Version
-VERSION := 1.0.0
+VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "0.0.0")
 
-# Build directories
-DIST_DIR := dist/aws-inventory-$(VERSION)
-BUILD_DIR := build
+# Directories
+SRC_DIR := src
+TEST_DIR := tests
+DIST_DIR := dist
+DOC_DIR := docs
+MAN_DIR := man
 
-# Package files
-DEB_PACKAGE := aws-inventory_$(VERSION)_all.deb
-TAR_PACKAGE := aws-inventory-$(VERSION).tar.gz
+# Files
+MAIN_SCRIPT := $(SRC_DIR)/aws-inventory.sh
+HTML_REPORT := $(SRC_DIR)/html_report.sh
+UTILS := $(SRC_DIR)/utils.sh
+CONFIG := config.yaml
 
+# Dependencies
+DEPS := aws jq yq
+
+# Default target
 all: build
 
-build: clean
+# Build the project
+build: check-deps
 	@echo "Building AWS Infrastructure Inventory Tool v$(VERSION)..."
-	@mkdir -p $(DIST_DIR)/{bin,src,man,tests}
-	@cp bin/aws-inventory $(DIST_DIR)/bin/
-	@cp src/*.sh $(DIST_DIR)/src/
-	@cp man/aws-inventory.1 $(DIST_DIR)/man/
-	@cp tests/test_aws_inventory.sh $(DIST_DIR)/tests/
-	@cp install.sh $(DIST_DIR)/
-	@cp README.md $(DIST_DIR)/
-	@cp LICENSE $(DIST_DIR)/
-	@chmod +x $(DIST_DIR)/bin/aws-inventory
-	@chmod +x $(DIST_DIR)/install.sh
-	@chmod +x $(DIST_DIR)/tests/test_aws_inventory.sh
-	@echo "Build completed successfully!"
+	@mkdir -p $(DIST_DIR)
+	@cp $(MAIN_SCRIPT) $(DIST_DIR)/aws-inventory
+	@cp $(HTML_REPORT) $(DIST_DIR)/html_report.sh
+	@cp $(UTILS) $(DIST_DIR)/utils.sh
+	@cp $(CONFIG) $(DIST_DIR)/config.yaml
+	@chmod +x $(DIST_DIR)/aws-inventory
+	@echo "Build complete!"
 
-clean:
-	@echo "Cleaning build directories..."
-	@rm -rf $(DIST_DIR) $(BUILD_DIR)
-	@find . -type f -name "*.tar.gz" -delete
-	@find . -type f -name "*.deb" -delete
+# Check dependencies
+check-deps:
+	@echo "Checking dependencies..."
+	@for dep in $(DEPS); do \
+		if ! command -v $$dep &> /dev/null; then \
+			echo "Error: $$dep is not installed"; \
+			exit 1; \
+		fi \
+	done
+	@echo "All dependencies found."
 
-dist: build
-	@echo "Creating distribution package..."
-	@cd $(dir $(DIST_DIR)) && tar -czf $(TAR_PACKAGE) $(notdir $(DIST_DIR))
-	@echo "Distribution package created: $(TAR_PACKAGE)"
-
-debian: dist
-	@echo "Building Debian package..."
-	@cp -r $(DIST_DIR) $(BUILD_DIR)
-	@cp -r debian $(BUILD_DIR)/
-	@cd $(BUILD_DIR) && dpkg-buildpackage -us -uc
-	@mv $(BUILD_DIR)/../$(DEB_PACKAGE) .
-	@echo "Debian package created: $(DEB_PACKAGE)"
-
-homebrew: dist
-	@echo "Updating Homebrew formula..."
-	@SHA256=$$(sha256sum $(TAR_PACKAGE) | cut -d' ' -f1) && \
-	sed -i "s/sha256 \".*\"/sha256 \"$$SHA256\"/" aws-inventory.rb
-	@echo "Homebrew formula updated with new SHA256"
-
-test:
+# Run tests
+test: check-deps
 	@echo "Running tests..."
-	@./tests/test_aws_inventory.sh
+	@if [ -d "$(TEST_DIR)" ]; then \
+		for test in $(TEST_DIR)/*.sh; do \
+			if [ -f "$$test" ]; then \
+				echo "Running $$test..."; \
+				bash "$$test" || exit 1; \
+			fi \
+		done \
+	fi
+	@echo "All tests passed!"
 
+# Run shellcheck
+lint: check-deps
+	@echo "Running shellcheck..."
+	@if command -v shellcheck &> /dev/null; then \
+		shellcheck $(SRC_DIR)/*.sh || exit 1; \
+	else \
+		echo "Error: shellcheck is not installed"; \
+		exit 1; \
+	fi
+	@echo "Shellcheck passed!"
+
+# Generate documentation
+docs:
+	@echo "Generating documentation..."
+	@mkdir -p $(DOC_DIR)
+	@if [ -d "$(MAN_DIR)" ]; then \
+		for man in $(MAN_DIR)/*.md; do \
+			if [ -f "$$man" ]; then \
+				man_page=$$(basename "$$man" .md); \
+				pandoc -f markdown -t man "$$man" -o "$(DOC_DIR)/$$man_page.1"; \
+			fi \
+		done \
+	fi
+	@echo "Documentation generated!"
+
+# Clean build artifacts
+clean:
+	@echo "Cleaning build artifacts..."
+	@rm -rf $(DIST_DIR)
+	@rm -rf __pycache__
+	@rm -rf .pytest_cache
+	@echo "Clean complete!"
+
+# Install the tool
+install: build
+	@echo "Installing AWS Infrastructure Inventory Tool..."
+	@sudo cp $(DIST_DIR)/aws-inventory /usr/local/bin/
+	@sudo cp $(DIST_DIR)/html_report.sh /usr/local/share/aws-inventory/
+	@sudo cp $(DIST_DIR)/utils.sh /usr/local/share/aws-inventory/
+	@sudo cp $(DIST_DIR)/config.yaml /etc/aws-inventory/config.yaml
+	@echo "Installation complete!"
+
+# Uninstall the tool
+uninstall:
+	@echo "Uninstalling AWS Infrastructure Inventory Tool..."
+	@sudo rm -f /usr/local/bin/aws-inventory
+	@sudo rm -rf /usr/local/share/aws-inventory
+	@sudo rm -rf /etc/aws-inventory
+	@echo "Uninstallation complete!"
+
+# Create a release
+release: build test lint docs
+	@echo "Creating release v$(VERSION)..."
+	@mkdir -p $(DIST_DIR)/release
+	@cp -r $(DIST_DIR)/* $(DIST_DIR)/release/
+	@tar -czf $(DIST_DIR)/aws-inventory-$(VERSION).tar.gz -C $(DIST_DIR)/release .
+	@rm -rf $(DIST_DIR)/release
+	@echo "Release created!"
+
+# Show help
 help:
-	@echo "Available targets:"
-	@echo "  all        - Build the package (default)"
-	@echo "  build      - Build the package"
-	@echo "  clean      - Clean build directories"
-	@echo "  dist       - Create distribution package"
-	@echo "  debian     - Build Debian package"
-	@echo "  homebrew   - Update Homebrew formula"
-	@echo "  test       - Run tests"
-	@echo "  help       - Show this help message" 
+	@echo "AWS Infrastructure Inventory Tool Makefile"
+	@echo ""
+	@echo "Targets:"
+	@echo "  all          Build the project (default)"
+	@echo "  build        Build the project"
+	@echo "  test         Run tests"
+	@echo "  lint         Run shellcheck"
+	@echo "  docs         Generate documentation"
+	@echo "  clean        Clean build artifacts"
+	@echo "  install      Install the tool"
+	@echo "  uninstall    Uninstall the tool"
+	@echo "  release      Create a release"
+	@echo "  help         Show this help message"
+
+.PHONY: all build check-deps test lint docs clean install uninstall release help 
