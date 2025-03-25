@@ -1,5 +1,9 @@
 # AWS Inventory Configuration
 
+output:
+  format: "html"
+  directory: .
+
 resources:
   ec2: true        # List EC2 instances
   s3: true         # List S3 buckets
@@ -8,11 +12,27 @@ resources:
   eks: true        # List EKS clusters
   iam: true        # List IAM users
   dynamodb: true   # List DynamoDB tables
+  vpc: true        # List VPC and networking resources
+  elb: true        # List Load Balancers
+  cloudwatch: true # List CloudWatch resources
+  elasticache: true # List ElastiCache clusters
+  sqs: true        # List SQS queues
+  sns: true        # List SNS topics
+  cloudfront: true # List CloudFront distributions
+  route53: true    # List Route53 resources
 
 filters:
   tags:            # Only list resources with these tags (optional)
     environment: "prod"
     owner: "team-a"
+  vpc:
+    exclude_default: true     # Exclude default VPC resources
+    exclude_main_route_tables: true  # Exclude main route tables
+    exclude_default_subnets: true    # Exclude default subnets
 
-output_format: "json"  # Options: json, csv
+reporting:
+  include_costs: true           # Include cost analysis
+  include_security: true        # Include security group analysis
+  include_metrics: true         # Include CloudWatch metrics
+  include_relationships: true   # Show resource relationships
 
