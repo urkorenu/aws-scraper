@@ -1,167 +1,156 @@
 # AWS Infrastructure Inventory Tool
 
-A professional command-line tool for generating comprehensive reports of your AWS infrastructure resources.
+A powerful and efficient tool for collecting and reporting AWS infrastructure resources. This tool provides detailed insights into your AWS environment with support for multiple output formats and customizable resource collection.
 
 ## Features
 
-- 📊 Generate detailed reports of AWS resources (EC2, S3, RDS, Lambda, etc.)
-- 💰 Cost analysis and tracking
-- 🔒 Security group analysis
-- 📱 Multiple output formats (JSON, HTML, Table, YAML)
-- 🎨 Beautiful HTML reports with interactive features
-- 🔍 Resource filtering and tagging support
-- 📈 Resource usage metrics and monitoring
+- **Multiple Resource Types**: Collect information about EC2, S3, RDS, Lambda, VPC, and more
+- **Flexible Output Formats**: Support for HTML, JSON, YAML, and table formats
+- **Customizable Configuration**: YAML-based configuration for easy customization
+- **Beautiful HTML Reports**: Modern, responsive HTML reports with interactive tables
+- **Resource Filtering**: Filter resources by tags and other criteria
+- **Cost Analysis**: Basic cost analysis for major AWS services
+- **Security Analysis**: Basic security group analysis
+- **Cross-Platform**: Works on Linux, macOS, and Windows (via WSL)
 
 ## Installation
 
-### macOS (Homebrew)
-```bash
-brew install aws-inventory
-```
+### Quick Install
 
-### Linux (apt)
 ```bash
-# Add repository
-curl -s https://packagecloud.io/install/repositories/aws-inventory/stable/script.deb.sh | sudo bash
-
-# Install package
-sudo apt-get install aws-inventory
+curl -sSL https://raw.githubusercontent.com/yourusername/aws-scraper/main/install.sh | bash
 ```
 
 ### Manual Installation
+
+1. Clone the repository:
 ```bash
-# Clone the repository
 git clone https://github.com/yourusername/aws-scraper.git
 cd aws-scraper
-
-# Install dependencies
-./install.sh
 ```
 
-## Quick Start
-
-1. Configure AWS credentials:
+2. Install dependencies:
 ```bash
-aws configure
+# For Ubuntu/Debian
+sudo apt-get install awscli jq yq
+
+# For macOS
+brew install awscli jq yq
 ```
 
-2. Create a configuration file (optional):
-```yaml
-output_format: "html"
-resources:
-  ec2: true
-  s3: true
-  rds: true
-  lambda: true
-filters:
-  tags:
-    Environment: "production"
-```
-
-3. Run the inventory:
+3. Make the script executable:
 ```bash
-aws-inventory
+chmod +x src/aws-inventory.sh
+```
+
+4. Create a symbolic link:
+```bash
+sudo ln -s "$(pwd)/src/aws-inventory.sh" /usr/local/bin/aws-inventory
 ```
 
 ## Configuration
 
-The tool can be configured using either command-line arguments or a YAML configuration file.
+The tool uses a YAML configuration file located at `~/.aws-inventory/config.yaml`. A default configuration will be created on first run.
 
-### Command-line Arguments
-
-```bash
-aws-inventory [OPTIONS]
-
-Options:
-  -f, --format FORMAT    Output format (json|html|table|yaml)
-  -c, --config FILE     Configuration file path
-  -o, --output FILE     Output file path
-  -v, --verbose         Enable verbose logging
-  -h, --help           Show help message
-```
-
-### Configuration File
-
-Create a `config.yaml` file with the following options:
-
+Example configuration:
 ```yaml
-output_format: "html"
+output:
+  format: html
+  directory: ~/.aws-inventory/reports
+
 resources:
   ec2: true
   s3: true
   rds: true
   lambda: true
   vpc: true
-  elb: true
-  cloudwatch: true
-  elasticache: true
-  sqs: true
-  sns: true
-  cloudfront: true
-  route53: true
-  iam: true
-  dynamodb: true
-  eks: true
 
 filters:
-  tags:
-    Environment: "production"
+  tags: {}
   vpc:
     exclude_default: true
     exclude_main_route_tables: true
     exclude_default_subnets: true
 ```
 
+## Usage
+
+Basic usage:
+```bash
+aws-inventory
+```
+
+With options:
+```bash
+aws-inventory --format html --output my-report.html
+```
+
+### Command Line Options
+
+- `-f, --format FORMAT`: Output format (json|html|table|yaml)
+- `-c, --config FILE`: Configuration file path
+- `-o, --output FILE`: Output file path
+- `-v, --verbose`: Enable verbose logging
+- `-h, --help`: Show help message
+
 ## Output Formats
 
 ### HTML Report
+- Modern, responsive design
 - Interactive tables
-- Resource summary cards
+- Resource summaries
 - Cost analysis
-- Security group visualization
-- Mobile-responsive design
+- Security analysis
 
 ### JSON Output
 - Structured data format
-- Easy to parse and integrate
-- Complete resource details
-
-### Table Output
-- Human-readable format
-- Terminal-friendly
-- Quick overview
+- Easy to parse and integrate with other tools
+- Complete resource information
 
 ### YAML Output
+- Human-readable format
 - Hierarchical structure
-- Easy to read and edit
-- Configuration-friendly
+- Easy to edit and modify
+
+### Table Output
+- Simple text-based format
+- Easy to read in terminal
+- Basic resource information
 
 ## Development
 
-### Prerequisites
-- Bash 4.0+
-- AWS CLI
-- jq
-- yq
-- Python 3.8+ (for tests)
+### Project Structure
 
-### Building from Source
-```bash
-git clone https://github.com/yourusername/aws-scraper.git
-cd aws-scraper
-./build.sh
+```
+aws-scraper/
+├── src/                    # Source code
+│   ├── aws-inventory.sh    # Main script
+│   ├── html_report.sh      # HTML report generator
+│   └── utils.sh           # Utility functions
+├── tests/                  # Test files
+├── docs/                   # Documentation
+├── man/                    # Manual pages
+├── bin/                    # Binary files
+└── config.yaml            # Default configuration
 ```
 
 ### Running Tests
+
 ```bash
-./test.sh
+make test
+```
+
+### Building
+
+```bash
+make build
 ```
 
 ## Contributing
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
@@ -171,9 +160,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
-- AWS CLI team for the excellent command-line interface
-- jq team for JSON processing
-- yq team for YAML processing
+- AWS CLI team for the powerful command-line interface
+- jq developers for JSON processing
+- yq developers for YAML processing
+- All contributors to this project
 
 ## Support
 
